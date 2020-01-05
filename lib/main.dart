@@ -1,8 +1,9 @@
 import 'dart:convert';
-
+import 'package:tiquotes/HexColor.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'dart:math';
+import 'package:toast/toast.dart';
 
 void main() => runApp(MaterialApp(
   debugShowCheckedModeBanner: false,
@@ -21,45 +22,53 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
 
-  List<String> backgroundList = [
-    'https://images.pexels.com/photos/3363341/pexels-photo-3363341.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    'https://images.pexels.com/photos/3336152/pexels-photo-3336152.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
-    'https://images.pexels.com/photos/3323694/pexels-photo-3323694.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
-    'https://images.pexels.com/photos/3312242/pexels-photo-3312242.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    'https://images.pexels.com/photos/3310822/pexels-photo-3310822.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    'https://images.pexels.com/photos/433142/pexels-photo-433142.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    'https://images.pexels.com/photos/2416871/pexels-photo-2416871.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
-    'https://images.pexels.com/photos/2827609/pexels-photo-2827609.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940'
-  ];
-
   Random rnd = new Random();
-
   Map data =  {
-      'backgroundUrl': '',
       'quote':''
   };
+
+  Map photo = {
+    'backgroundUrl' : 'https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940',
+    'color' : '#3C3C3C'
+  };
+
 
 
   Future<void> getData() async{
     Response response = await get('https://api.kanye.rest/');
     Map contents =jsonDecode(response.body);
-    print(contents['quote']);
-    int random_index = 0 + rnd.nextInt(6);
     setState(() {
       data = {
-        'quote' : contents['quote'],
-        'backgroundUrl' : backgroundList[random_index]
+        'quote' : contents['quote']
       };
-      print(data);
+    });
+  }
+
+  Future<void> getPhotos() async{
+    Response response = await get('https://api.unsplash.com//photos/random/?client_id=826b6240f161adb9c7fdb75985a27713828dac61748440fdf3d343f1d5133b23');
+    setState(() {
+      if(response.body != 'Rate Limit Exceeded'){
+        Map photos = jsonDecode(response.body);
+        Map urls = photos['urls'];
+        photo = {
+          'backgroundUrl' : urls['regular'],
+          'color' : photos['color']
+        };
+      }
+      else{
+        Toast.show("Daily Rate Limit Exceeded", context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+      }
     });
   }
 
 
   @override
   void initState() {
-    // TODO: implement initState
+
     super.initState();
     getData();
+    getPhotos();
+
   }
 
   @override
@@ -71,27 +80,26 @@ class _HomeState extends State<Home> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text('Kanye West Quotes', style: TextStyle(fontSize: 20.0, color: Colors.grey[400], fontFamily: 'Vegan', letterSpacing: 1.0),),
+              Text('~Kanye West Quotes~', style: TextStyle(fontSize: 20.0, color: Colors.grey[400], fontFamily: 'Vegan', letterSpacing: 1.2),),
               SizedBox(height: 7.0,),
               Flexible(
                 child: Container(
                   width:  400,
-                  height: 400,
+                  height: 500,
                   child: Card(
                     semanticContainer: true,
                     clipBehavior: Clip.antiAliasWithSaveLayer,
                     color: Colors.grey[200],
                     elevation: 10,
                     shape: RoundedRectangleBorder(
-                      borderRadius:BorderRadius.circular(10),
+                      borderRadius:BorderRadius.circular(15),
                       ),
                     child: Stack(
                       children: <Widget>[
                         Stack(
                           alignment: Alignment.center,
                           children: <Widget>[
-
-                              Image(image: NetworkImage(data['backgroundUrl']), height: double.infinity,width: double.infinity, fit: BoxFit.cover,),
+                              Image(image: NetworkImage(photo['backgroundUrl']), height: double.infinity,width: double.infinity, fit: BoxFit.cover,),
                               Container(
                               color: Colors.grey[900].withOpacity(0.5),
                                 child: Center(
@@ -103,7 +111,7 @@ class _HomeState extends State<Home> {
                                       padding: const EdgeInsets.all(25.0),
                                       child: RichText(
                                         text: TextSpan(
-                                          text: data['quote'],
+                                          text:data['quote'],
                                           style: TextStyle(color: Colors.white, fontSize: 25.0, fontFamily: 'Vegan', letterSpacing: 2.0 ,height: 1.1 ),
                                         ),
                                         textAlign: TextAlign.center,
@@ -123,9 +131,10 @@ class _HomeState extends State<Home> {
               SizedBox(height: 20.0,),
               FloatingActionButton(
                 child: Icon(Icons.refresh),
-                backgroundColor: Colors.grey[800],
+                backgroundColor: HexColor(photo['color']),
                 onPressed: (){
                   getData();
+                  getPhotos();
                 },
               ),
                 ],
